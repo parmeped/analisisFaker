@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace Holdings.Domain.Filler
+namespace Faker.Domain
 {
     public class DimGeography
     {

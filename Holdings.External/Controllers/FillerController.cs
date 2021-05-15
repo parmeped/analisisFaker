@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using DataFiller.Service;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Holdings.External.Controllers
@@ -24,32 +21,6 @@ namespace Holdings.External.Controllers
             try
             {
                 return Ok(await _dataFiller.FillData());
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500);
-            }
-        }
-
-        [HttpGet("customer/{id}")]
-        public async Task<IActionResult> GetCustomerById([FromRoute] int id)
-        {
-           try
-            {
-                return Ok(await _dataFiller.GetCustomerByKey(id));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500);
-            }
-        }
-
-        [HttpGet("geography/{id}")]
-        public async Task<IActionResult> GetGeographyById([FromRoute] int id)
-        {
-            try
-            {
-                return Ok(await _dataFiller.GetGeographyByKey(id));
             }
             catch (Exception ex)
             {
