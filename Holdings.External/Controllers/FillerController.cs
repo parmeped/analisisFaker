@@ -41,5 +41,30 @@ namespace Holdings.External.Controllers
             }
         }
 
+        [HttpPost("fill-vaccines")]
+        public async Task<IActionResult> FillVaccines()
+        {
+            try
+            {
+                return Ok(await _dataFiller.FillVaccines());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
+        }
+
+        [HttpPost("fill-individuals/{amount}")]
+        public async Task<IActionResult> FillIndividuals([FromRoute] int amount)
+        {
+            try
+            {
+                return Ok(await _dataFiller.FillIndividual(amount));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
+        }
     }
 }

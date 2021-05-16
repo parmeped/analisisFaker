@@ -1,6 +1,12 @@
 ﻿using Assets.Repository.Context;
+using Bogus;
 using Faker.Domain;
+using Faker.Domain.Constants;
+using Faker.Domain.Dtos.Response;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DataFiller.Service
@@ -8,10 +14,12 @@ namespace DataFiller.Service
     public class DataFillerService : IDataFillerService
     {
         private readonly HoldingsContext _context;
-
+        private readonly int _occupationsTotalWeight;
+                        
         public DataFillerService(HoldingsContext context)
         {
             _context = context;
+            _occupationsTotalWeight = Constants.Occupations.Sum(x => x.weight);
         }
 
         public async Task<bool> FillData()
@@ -157,14 +165,88 @@ namespace DataFiller.Service
             return await _context.SaveChangesAsync() > -1;
         }
 
-        public Task<bool> FillIndividual()
+        public async Task<bool> FillIndividual(int amount)
         {
-            throw new NotImplementedException();
+            int year = DateTime.Now.Date.Year;
+            var individuals = new Faker<DimIndividual>()
+                .RuleFor(x => x.Name, f => f.Person.FullName)
+                .RuleFor(x => x.Email, f => f.Person.Email)
+                .RuleFor(x => x.DOB, f => f.Person.DateOfBirth.Date)
+                .RuleFor(x => x.DocumentNumber, (f, u) =>
+                    {
+                        var age = year - u.DOB.Year;
+                        return age switch
+                        {
+                            int n when (n <= 15) => f.Random.Number(Constants.DocumentsUpTo15.MinDoc, Constants.DocumentsUpTo15.MaxDoc),
+                            int n when (n > 15 && n <= 25) => f.Random.Number(Constants.Documents16_25.MinDoc, Constants.Documents16_25.MaxDoc),
+                            int n when (n > 25 && n <= 65) => f.Random.Number(Constants.Documents26_65.MinDoc, Constants.Documents26_65.MaxDoc),
+                            int n when (n > 65) => f.Random.Number(Constants.Documents65Up.MinDoc, Constants.Documents65Up.MaxDoc),
+                            _ => f.Random.Number(Constants.DocumentsUpTo15.MinDoc, Constants.Documents65Up.MaxDoc),
+                        };
+                    }
+                )
+                .RuleFor(x => x.Gender, f => f.Person.Gender.ToString())
+                .RuleFor(x => x.HospitalDistance, f => f.Random.Number(1, 350))
+                .RuleFor(x => x.Occupation, f => getRandomOccupation(f.Random.Number(0, _occupationsTotalWeight)))
+                .RuleFor(x => x.Vaccine1, f => f.Random.Bool(.35f))
+                .RuleFor(x => x.Vaccine2, (f, u) => u.Vaccine1 && f.Random.Bool(.2f))
+                .Generate(amount);
+
+            foreach(var ind in individuals)
+            {
+                await _context.DimIndividual.AddAsync(ind);
+            }
+
+            return await _context.SaveChangesAsync() > -1;
         }
 
-        public Task<bool> FillVaccines()
+        public async Task<bool> FillVaccines()
         {
-            throw new NotImplementedException();
+            Random rand = new Random();
+            foreach(var vaccine in Constants.Vaccines)
+            {
+                vaccine.LaboratoryKey = rand.Next(10025, 11000);
+                await _context.DimVaccines.AddAsync(vaccine);
+            }
+            return await _context.SaveChangesAsync() > -1;
+        }
+
+        public async Task<IEnumerable<ProportionDto>> GetIndividualProportions()
+        {
+            int totalIndividuals = await _context.DimIndividual.CountAsync();
+            var orderedIndividuals = await _context.DimIndividual.OrderBy(x => x.DOB).ToListAsync();
+            var yearFrom = orderedIndividuals.First().DOB.Year;
+            var yearTo = yearFrom + 10;
+            var proportions = new List<ProportionDto>()
+            {
+                new ProportionDto
+                {
+                    YearFrom = yearFrom,
+                    YearTo = yearTo,
+                    Occupations = new Dictionary<string, double>()
+                }
+            };
+            
+
+            foreach(var individual in orderedIndividuals)
+            {
+                if (individual.DOB.Year < yearTo)
+                {
+
+                }
+            }
+            return proportions;
+        }
+
+        private string getRandomOccupation(int rand)
+        {
+            // A Weighted int between 0 and Occupation lenght. 
+            foreach(var (Occupation, weight) in Constants.Occupations)
+            {
+                if ((rand -= weight) < 0)
+                    return Occupation;
+            }
+            return Constants.Occupations[Constants.Occupations.Length - 1].Occupation; // Last occupation
         }
 
         //private (int dateKey, DateTime date) getNextDate(DateTime date)

@@ -4,14 +4,16 @@ using Assets.Repository.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Holdings.Repository.Migrations
 {
     [DbContext(typeof(HoldingsContext))]
-    partial class HoldingsContextModelSnapshot : ModelSnapshot
+    [Migration("20210515215229_Vaccines")]
+    partial class Vaccines
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,33 +160,6 @@ namespace Holdings.Repository.Migrations
                     b.HasKey("VaccineKey");
 
                     b.ToTable("DimVaccines");
-                });
-
-            modelBuilder.Entity("Faker.Domain.FactDistribution", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("HospitalKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IndividualKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Vaccinated")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("VaccineKey")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("FactDistribution");
                 });
 #pragma warning restore 612, 618
         }

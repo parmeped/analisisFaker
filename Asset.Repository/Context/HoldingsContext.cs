@@ -12,5 +12,6 @@ namespace Assets.Repository.Context
         public DbSet<DimHospital> DimHospitals { get; set; }
         public DbSet<DimIndividual> DimIndividual { get; set; }
         public DbSet<DimVaccines> DimVaccines { get; set; }
+        public DbSet<FactDistribution> FactDistribution { get; set; }
     }
 }
