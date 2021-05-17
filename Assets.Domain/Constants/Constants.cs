@@ -72,6 +72,18 @@ namespace Faker.Domain.Constants
             ,("NonEssential_A", 10000)
             ,("NonEssential_B", 11000)
         };
+        public static (int yearFrom, int yearTo, int weight)[] Demographic =
+        {
+            (1940, 1945, 20),
+            (1946, 1950, 35),
+            (1951, 1960, 55),
+            (2001, 2010, 180),
+            (1991, 2000, 200),
+            (1961, 1970, 250),
+            (1971, 1980, 280),
+            (1981, 1990, 290)
+        };
+
         public static (int MinDoc, int MaxDoc) DocumentsUpTo15 = (50000000, 55000000);
         public static (int MinDoc, int MaxDoc) Documents16_25 = (40000000, 49999999);
         public static (int MinDoc, int MaxDoc) Documents26_65 = (20000000, 39999999);

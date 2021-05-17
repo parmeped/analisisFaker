@@ -8,6 +8,8 @@ namespace Faker.Domain.Dtos.Response
     {
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
+        public int AgeFrom { get; set; }
+        public int AgeTo { get; set; }
         public double PopulationPercentage { get; set; }
         public double Vaccine1Percentage { get; set; }
         public double Vaccine2Percentage { get; set; }

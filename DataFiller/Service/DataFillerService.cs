@@ -15,11 +15,13 @@ namespace DataFiller.Service
     {
         private readonly HoldingsContext _context;
         private readonly int _occupationsTotalWeight;
+        private readonly int _demographicsTotalWeight;
 
         public DataFillerService(HoldingsContext context)
         {
             _context = context;
             _occupationsTotalWeight = Constants.Occupations.Sum(x => x.weight);
+            _demographicsTotalWeight = Constants.Demographic.Sum(x => x.weight);
         }
 
         public async Task<bool> FillData()
@@ -171,7 +173,7 @@ namespace DataFiller.Service
             var individuals = new Faker<DimIndividual>()
                 .RuleFor(x => x.Name, f => f.Person.FullName)
                 .RuleFor(x => x.Email, f => f.Person.Email)
-                .RuleFor(x => x.DOB, f => f.Person.DateOfBirth.Date)
+                .RuleFor(x => x.DOB, f => getRandomDOB(f.Person.DateOfBirth, f.Random.Number(0, _demographicsTotalWeight)))
                 .RuleFor(x => x.DocumentNumber, (f, u) =>
                     {
                         var age = year - u.DOB.Year;
@@ -188,7 +190,7 @@ namespace DataFiller.Service
                 .RuleFor(x => x.Gender, f => f.Person.Gender.ToString())
                 .RuleFor(x => x.HospitalDistance, f => f.Random.Number(1, 350))
                 .RuleFor(x => x.Occupation, f => getRandomOccupation(f.Random.Number(0, _occupationsTotalWeight)))
-                .RuleFor(x => x.Vaccine1, f => f.Random.Bool(.35f))
+                .RuleFor(x => x.Vaccine1, (f, u) => f.Random.Bool(.35f))
                 .RuleFor(x => x.Vaccine2, (f, u) => u.Vaccine1 && f.Random.Bool(.2f))
                 .Generate(amount);
 
@@ -216,7 +218,7 @@ namespace DataFiller.Service
             int totalIndividuals = await _context.DimIndividual.CountAsync();
             var orderedIndividuals = await _context.DimIndividual.OrderBy(x => x.DOB).ToListAsync();
             var yearFrom = orderedIndividuals.First().DOB.Year;
-            var yearTo = orderedIndividuals.Last().DOB.Year;
+            var yearTo = orderedIndividuals.Last().DOB.Year + 10;
             var proportions = new List<ProportionDto>();
             var auxYear = yearFrom + 10;
             while (auxYear < yearTo)
@@ -225,22 +227,26 @@ namespace DataFiller.Service
                 {
                     YearFrom = yearFrom,
                     YearTo = auxYear,
-                    Occupations = Constants.Occupations.ToDictionary(x => x.Occupation, x => (double)0)
-                };
+                    Occupations = Constants.Occupations.ToDictionary(x => x.Occupation, x => (double)0),
+                    AgeFrom = DateTime.Now.Date.Year - yearFrom,
+                    AgeTo = DateTime.Now.Date.Year - auxYear
+            };
                 yearFrom += 10;
                 auxYear += 10;
                 proportions.Add(dto);
             }
-            
-            foreach(ProportionDto dto in proportions)
+
+            var keys = Constants.Occupations.Select(x => x.Occupation).ToList();
+
+            foreach (ProportionDto dto in proportions)
             {
                 var population = orderedIndividuals.Where(x => x.DOB.Year >= dto.YearFrom && x.DOB.Year <= dto.YearTo).ToList();
-                dto.PopulationPercentage = population.Count() / orderedIndividuals.Count;
-                dto.Vaccine1Percentage = population.Count(x => x.Vaccine1) / population.Count;
-                dto.Vaccine2Percentage = population.Count(x => x.Vaccine2) / population.Count;
-                foreach (string occ in dto.Occupations.Keys)
+                dto.PopulationPercentage = Math.Round((double)(population.Count() / (double)orderedIndividuals.Count) * 100, 2);
+                dto.Vaccine1Percentage = Math.Round((double)(population.Count(x => x.Vaccine1) / (double)population.Count) * 100, 2);
+                dto.Vaccine2Percentage = Math.Round((double)(population.Count(x => x.Vaccine2) / (double)population.Count) * 100, 2);
+                foreach (string occ in keys)
                 {
-                    dto.Occupations[occ] = population.Count(x => x.Occupation.Equals(occ)) / population.Count;
+                    dto.Occupations[occ] = Math.Round((double)(population.Count(x => x.Occupation.Equals(occ)) / (double)population.Count) * 100, 2);
                 }
             }
 
@@ -256,6 +262,20 @@ namespace DataFiller.Service
                     return Occupation;
             }
             return Constants.Occupations[Constants.Occupations.Length - 1].Occupation; // Last occupation
+        }
+
+        private DateTime getRandomDOB(DateTime date, int rand)
+        {
+            Random r = new Random();
+            foreach (var (yearFrom, yearTo, weight) in Constants.Demographic)
+            {
+                if ((rand -= weight) < 0)
+                {
+                    var year = r.Next(yearFrom, yearTo);
+                    return !DateTime.IsLeapYear(year) && date.Month == 2 && date.Day == 29 ? new DateTime(year, date.Month, date.Day - 1) : new DateTime(year, date.Month, date.Day);
+                }
+            }
+            return date;
         }
 
         //private (int dateKey, DateTime date) getNextDate(DateTime date)
