@@ -15,7 +15,7 @@ namespace Holdings.External.Controllers
             _dataFiller = dataFiller;
         }
 
-        [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> FillData()
         {
             try
@@ -67,8 +67,21 @@ namespace Holdings.External.Controllers
             }
         }
 
-        [HttpGet("proportions")]
-        public async Task<IActionResult> GetProportions()
+        [HttpPost("fill-hospitals")]
+        public async Task<IActionResult> FillHospitals()
+        {
+            try
+            {
+                return Ok(await _dataFiller.FillHospital());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
+        }
+
+        [HttpGet("demographic")]
+        public async Task<IActionResult> GetDemographic()
         {
             try
             {
@@ -79,5 +92,6 @@ namespace Holdings.External.Controllers
                 return StatusCode(500);
             }
         }
+
     }
 }

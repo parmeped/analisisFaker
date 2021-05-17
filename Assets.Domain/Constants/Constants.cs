@@ -88,5 +88,6 @@ namespace Faker.Domain.Constants
         public static (int MinDoc, int MaxDoc) Documents16_25 = (40000000, 49999999);
         public static (int MinDoc, int MaxDoc) Documents26_65 = (20000000, 39999999);
         public static (int MinDoc, int MaxDoc) Documents65Up = (13000000, 19999999);
+        public static int AmountHospitals = 2873;
     }
 }

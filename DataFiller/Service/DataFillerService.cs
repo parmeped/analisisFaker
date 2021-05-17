@@ -26,110 +26,50 @@ namespace DataFiller.Service
 
         public async Task<bool> FillData()
         {
-            throw new NotImplementedException();
+            Random rand = new Random();
+            var population = _context.DimIndividual.ToList();
+
+            foreach (var pop in population)
+            {
+                var vaccinated = pop.Vaccine1 && pop.Vaccine2;
+                var fact = new FactDistribution
+                {
+                    IndividualKey = pop.IndividualKey,
+                    VaccineKey = rand.Next(2, 11),
+                    HospitalKey = rand.Next(1, Constants.AmountHospitals),
+                    Priority = vaccinated ? 0 : calculatePriority(pop.DOB, pop.Occupation, pop.Vaccine1, pop.HospitalDistance),
+                    Vaccinated = vaccinated,
+                };
+                await _context.FactDistribution.AddAsync(fact);
+            }
+            return await _context.SaveChangesAsync() > -1;
         }
 
-        //private int prodLow;
-        //private int prodMax;
-        //private int custLow;
-        //private int custMax;
-        //private int geoLow;
-        //private int geoMax;
-        //private int orgLow;
-        //private int orgMax;
-        //private int promMax;
-        //private int gotLucky;
-        //private DimPromotion noDiscountDim;
-
-
-
-        //public async Task<bool> FillData()
-        //{
-        //    prodLow = await _context.DimProduct.OrderBy(x => x.ProductKey).Select(x => x.ProductKey).FirstAsync();
-        //    prodMax = await _context.DimProduct.OrderByDescending(x => x.ProductKey).Select(x => x.ProductKey).FirstAsync();
-        //    custLow = await _context.DimCustomer.OrderBy(x => x.CustomerKey).Select(x => x.CustomerKey).FirstAsync();
-        //    custMax = await _context.DimCustomer.OrderByDescending(x => x.CustomerKey).Select(x => x.CustomerKey).FirstAsync();
-        //    geoLow = await _context.DimGeography.OrderBy(x => x.GeographyKey).Select(x => x.GeographyKey).FirstAsync();
-        //    geoMax = await _context.DimGeography.OrderByDescending(x => x.GeographyKey).Select(x => x.GeographyKey).FirstAsync();
-        //    orgLow = await _context.DimOrganization.OrderBy(x => x.OrganizationKey).Select(x => x.OrganizationKey).FirstAsync();
-        //    orgMax = await _context.DimOrganization.OrderByDescending(x => x.OrganizationKey).Select(x => x.OrganizationKey).FirstAsync();
-        //    promMax = await _context.DimPromotion.OrderByDescending(x => x.PromotionKey).Select(x => x.PromotionKey).FirstAsync();
-        //    noDiscountDim = await _context.DimPromotion.FindAsync(1);
-
-        //    Random rand = new Random();
-        //    int limit = 150, filled = 0;
-        //    int amountToFill = rand.Next(1, 500);
-        //    var date = DateTime.Now.Date.AddYears(-5);
-        //    int dateKey, prodKey;
-
-        //    (dateKey, date) = getNextDate(date);
-        //    prodKey = getNextProd();
-
-        //    var customerKey = getNextCustomer();
-        //    var geoKey = getNextGeography();
-        //    var orgKey = getNextOrganization();
-        //    var promotionDim = await getNextPromotion();
-
-        //    var prodDim = await _context.DimProduct.FindAsync(prodKey);
-        //    var prodSubCatDim = await _context.DimProductSubcategory.FindAsync(prodDim.ProductSubcategoryKey);
-        //    var sale = getNextSale(prodDim, promotionDim);
-
-        //    for (int i = 0; i < limit;)
-        //    {
-        //        while (filled < amountToFill)
-        //        {
-        //            var fact = new FactSales
-        //            {
-        //                Id = i + 1,
-        //                DateKey = dateKey,
-        //                ProductKey = prodKey,
-        //                ProductCategoryKey = prodSubCatDim?.ProductCategoryKey ?? 0,
-        //                ProductSubcategoryKey = prodDim?.ProductSubcategoryKey ?? 0,
-        //                CustomerKey = customerKey,
-        //                GeographicKey = geoKey,
-        //                OrganizationKey = orgKey,
-        //                PromotionKey = promotionDim.PromotionKey,
-        //                Amount_ordered = sale.Ordered,
-        //                Total_amount = (decimal)sale.Amount,
-        //                Utility = (decimal)sale.Utility
-        //            };
-        //            prodKey = getNextProd();
-        //            prodDim = await _context.DimProduct.FindAsync(prodKey);
-        //            prodSubCatDim = await _context.DimProductSubcategory.FindAsync(prodDim.ProductSubcategoryKey);
-        //            customerKey = getNextCustomer();
-        //            geoKey = getNextGeography();
-        //            orgKey = getNextOrganization();
-        //            promotionDim = await getNextPromotion();
-        //            sale = getNextSale(prodDim, promotionDim);
-        //            await _context.FactSales.AddAsync(fact);
-        //            filled++;
-        //            i++;
-        //        }
-        //        await _context.SaveChangesAsync();
-        //        filled = 0;
-        //        amountToFill = rand.Next(1, 500);
-        //        (dateKey, date) = getNextDate(date);
-        //        prodKey = getNextProd();
-        //        prodDim = await _context.DimProduct.FindAsync(prodKey);
-        //        prodSubCatDim = await _context.DimProductSubcategory.FindAsync(prodDim.ProductSubcategoryKey);
-        //        customerKey = getNextCustomer();
-        //        geoKey = getNextGeography();
-        //        orgKey = getNextOrganization();
-        //        promotionDim = await getNextPromotion();
-        //        sale = getNextSale(prodDim, promotionDim);
-        //    }
-        //    return true;
-        //}
-
-        //public async Task<DimCustomer> GetCustomerByKey(int key)
-        //{
-        //    return await _context.DimCustomer.FirstOrDefaultAsync(x => x.CustomerKey == key);
-        //}
-
-        //public async Task<DimGeography> GetGeographyByKey(int key)
-        //{
-        //    return await _context.DimGeography.FirstOrDefaultAsync(x => x.GeographyKey == key);
-        //}
+        private int calculatePriority(DateTime DOB, string occupation, bool vac1, int hospDistance)
+        {
+            int initial = 0;
+            initial += (DateTime.Now.Year - DOB.Year) / 4;
+            if (vac1)
+            {
+                initial += 20;
+            }
+            initial += hospDistance / 10;
+            initial += occupation switch
+            {
+                "Essential_A" => 25,
+                "Essential_B" => 20,
+                "Essential_C" => 15,
+                "Essential_D" => 10,
+                "PublicPerson_A" => 15,
+                "PublicPerson_B" => 10,
+                "PublicPerson_C" => 5,
+                "PublicPerson_D" => 3,
+                "NonEssential_A" => 4,
+                "NonEssential_B" => 2,
+                _ => 2,
+            };
+            return initial > 100 ? 100 : initial;
+        }
 
         public async Task<bool> FillDates()
         {
@@ -154,16 +94,19 @@ namespace DataFiller.Service
         public async Task<bool> FillHospital()
         {
             Random rand = new Random();
-            // todo adentro de for
-            var hosp = new DimHospital()
+
+            var hospitals = new Faker<DimHospital>()
+                .RuleFor(x => x.Name, f => $"Hospital - {f.Person.FirstName}")
+                .RuleFor(x => x.Direction, f => $"{f.Address.StreetName()} {f.Address.StreetAddress()}")
+                .RuleFor(x => x.HealthWorkers, f => f.Random.Number(150, 1000))
+                .RuleFor(x => x.Capacity, (f, u) => u.HealthWorkers * f.Random.Number(3, 6))
+                .RuleFor(x => x.GeographyKey, f => f.Random.Number(10100, 230500))
+                .Generate(Constants.AmountHospitals);
+            
+            foreach(var hosp in hospitals)
             {
-                HospitalKey = 1, // Un int que sube por cada uno creado
-                Direction = "data falopa",
-                Capacity = rand.Next(1, 30),
-                HealthWorkers = rand.Next(1, 30),
-                Name = "Hospital chamullo"
-            };
-            await _context.AddAsync(hosp);
+                await _context.AddAsync(hosp);
+            }
             return await _context.SaveChangesAsync() > -1;
         }
 

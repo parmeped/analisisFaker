@@ -9,10 +9,11 @@ namespace Faker.Domain
     public class DimHospital
     {
         [Key]
-        public int HospitalKey { get; set; } // Id, de 1 a n
-        public string Name { get; set; } // Falopa
-        public string Direction { get; set; } // Falopa
-        public int Capacity { get; set; } // Usado para calcular prioridad luego. Capacity deberia ir a juego con HealthWorkers. entre 500 - 1500
-        public int HealthWorkers { get; set; } // Falopa entre 150 - 550
+        public int HospitalKey { get; set; } 
+        public int GeographyKey { get; set; }
+        public string Name { get; set; } 
+        public string Direction { get; set; }
+        public int Capacity { get; set; } 
+        public int HealthWorkers { get; set; }
     }
 }
