@@ -66,5 +66,18 @@ namespace Holdings.External.Controllers
                 return StatusCode(500);
             }
         }
+
+        [HttpGet("proportions")]
+        public async Task<IActionResult> GetProportions()
+        {
+            try
+            {
+                return Ok(await _dataFiller.GetIndividualProportions());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
+            }
+        }
     }
 }

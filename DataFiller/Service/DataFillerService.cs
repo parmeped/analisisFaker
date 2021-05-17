@@ -15,7 +15,7 @@ namespace DataFiller.Service
     {
         private readonly HoldingsContext _context;
         private readonly int _occupationsTotalWeight;
-                        
+
         public DataFillerService(HoldingsContext context)
         {
             _context = context;
@@ -192,7 +192,7 @@ namespace DataFiller.Service
                 .RuleFor(x => x.Vaccine2, (f, u) => u.Vaccine1 && f.Random.Bool(.2f))
                 .Generate(amount);
 
-            foreach(var ind in individuals)
+            foreach (var ind in individuals)
             {
                 await _context.DimIndividual.AddAsync(ind);
             }
@@ -203,7 +203,7 @@ namespace DataFiller.Service
         public async Task<bool> FillVaccines()
         {
             Random rand = new Random();
-            foreach(var vaccine in Constants.Vaccines)
+            foreach (var vaccine in Constants.Vaccines)
             {
                 vaccine.LaboratoryKey = rand.Next(10025, 11000);
                 await _context.DimVaccines.AddAsync(vaccine);
@@ -216,32 +216,41 @@ namespace DataFiller.Service
             int totalIndividuals = await _context.DimIndividual.CountAsync();
             var orderedIndividuals = await _context.DimIndividual.OrderBy(x => x.DOB).ToListAsync();
             var yearFrom = orderedIndividuals.First().DOB.Year;
-            var yearTo = yearFrom + 10;
-            var proportions = new List<ProportionDto>()
+            var yearTo = orderedIndividuals.Last().DOB.Year;
+            var proportions = new List<ProportionDto>();
+            var auxYear = yearFrom + 10;
+            while (auxYear < yearTo)
             {
-                new ProportionDto
+                var dto = new ProportionDto
                 {
                     YearFrom = yearFrom,
-                    YearTo = yearTo,
-                    Occupations = new Dictionary<string, double>()
-                }
-            };
+                    YearTo = auxYear,
+                    Occupations = Constants.Occupations.ToDictionary(x => x.Occupation, x => (double)0)
+                };
+                yearFrom += 10;
+                auxYear += 10;
+                proportions.Add(dto);
+            }
             
-
-            foreach(var individual in orderedIndividuals)
+            foreach(ProportionDto dto in proportions)
             {
-                if (individual.DOB.Year < yearTo)
+                var population = orderedIndividuals.Where(x => x.DOB.Year >= dto.YearFrom && x.DOB.Year <= dto.YearTo).ToList();
+                dto.PopulationPercentage = population.Count() / orderedIndividuals.Count;
+                dto.Vaccine1Percentage = population.Count(x => x.Vaccine1) / population.Count;
+                dto.Vaccine2Percentage = population.Count(x => x.Vaccine2) / population.Count;
+                foreach (string occ in dto.Occupations.Keys)
                 {
-
+                    dto.Occupations[occ] = population.Count(x => x.Occupation.Equals(occ)) / population.Count;
                 }
             }
+
             return proportions;
         }
 
         private string getRandomOccupation(int rand)
         {
             // A Weighted int between 0 and Occupation lenght. 
-            foreach(var (Occupation, weight) in Constants.Occupations)
+            foreach (var (Occupation, weight) in Constants.Occupations)
             {
                 if ((rand -= weight) < 0)
                     return Occupation;
